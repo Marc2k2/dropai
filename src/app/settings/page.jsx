@@ -24,7 +24,8 @@ export default function SettingsPage() {
   const [portalError, setPortalError] = useState('');
 
   useEffect(() => {
-    const supabase = createClient();
+    let supabase;
+    try { supabase = createClient(); } catch { return; }
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;

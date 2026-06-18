@@ -20,7 +20,14 @@ export default function LoginPage() {
     setError('');
     setSuccess('');
 
-    const supabase = createClient();
+    let supabase;
+    try {
+      supabase = createClient();
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+      return;
+    }
 
     if (mode === 'signin') {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
