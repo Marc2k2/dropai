@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 
 const PLAN_LIMITS = { free: 10, starter: 100, pro: Infinity, agency: Infinity };
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 function parseClaudeJSON(text) {
   const cleaned = text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim();
   return JSON.parse(cleaned);
@@ -16,6 +14,7 @@ export async function POST(request) {
     return Response.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });
   }
 
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const supabase = createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 

@@ -1,19 +1,15 @@
 import Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const PLAN_BY_PRICE = {
-  [process.env.STRIPE_PRICE_STARTER]: 'starter',
-  [process.env.STRIPE_PRICE_PRO]: 'pro',
-  [process.env.STRIPE_PRICE_AGENCY]: 'agency',
-};
-
-function planFromPriceId(priceId) {
-  return PLAN_BY_PRICE[priceId] ?? 'free';
-}
-
 export async function POST(request) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+  const planByPrice = () => ({
+    [process.env.STRIPE_PRICE_STARTER]: 'starter',
+    [process.env.STRIPE_PRICE_PRO]: 'pro',
+    [process.env.STRIPE_PRICE_AGENCY]: 'agency',
+  });
+
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
 
@@ -38,7 +34,7 @@ export async function POST(request) {
       await supabase
         .from('profiles')
         .update({
-          plan: planFromPriceId(priceId),
+          plan: planByPrice()[priceId] ?? 'free',
           stripe_customer_id: session.customer,
           stripe_subscription_id: session.subscription,
         })
@@ -49,10 +45,9 @@ export async function POST(request) {
     case 'customer.subscription.updated': {
       const sub = event.data.object;
       const priceId = sub.items.data[0]?.price?.id;
-
       await supabase
         .from('profiles')
-        .update({ plan: planFromPriceId(priceId) })
+        .update({ plan: planByPrice()[priceId] ?? 'free' })
         .eq('stripe_customer_id', sub.customer);
       break;
     }

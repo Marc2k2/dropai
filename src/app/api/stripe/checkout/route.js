@@ -1,21 +1,19 @@
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const PRICE_IDS = {
-  starter: process.env.STRIPE_PRICE_STARTER,
-  pro: process.env.STRIPE_PRICE_PRO,
-  agency: process.env.STRIPE_PRICE_AGENCY,
-};
-
 export async function POST(request) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { plan } = await request.json();
-  const priceId = PRICE_IDS[plan];
+  const priceIds = {
+    starter: process.env.STRIPE_PRICE_STARTER,
+    pro: process.env.STRIPE_PRICE_PRO,
+    agency: process.env.STRIPE_PRICE_AGENCY,
+  };
+  const priceId = priceIds[plan];
   if (!priceId) return Response.json({ error: 'Invalid plan' }, { status: 400 });
 
   const { data: profile } = await supabase
