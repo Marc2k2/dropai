@@ -127,4 +127,3 @@ Analyze this competitor and give me a precise playbook to differentiate and win.
   "positioning_statement": "Complete brand positioning statement: For [who], [your brand] is the [category] that [key benefit] unlike [competitor] which [their weakness]"
 }`;
 }
-}
