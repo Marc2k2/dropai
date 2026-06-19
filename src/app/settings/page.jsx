@@ -55,8 +55,10 @@ export default function SettingsPage() {
   }
 
   async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch {}
     router.push('/login');
     router.refresh();
   }

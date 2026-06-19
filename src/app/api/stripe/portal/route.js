@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 
-export async function POST() {
+export async function POST(request) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -17,9 +17,11 @@ export async function POST() {
     return Response.json({ error: 'No active subscription found' }, { status: 400 });
   }
 
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`;
+
   const session = await stripe.billingPortal.sessions.create({
     customer: profile.stripe_customer_id,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
+    return_url: `${origin}/settings`,
   });
 
   return Response.json({ url: session.url });

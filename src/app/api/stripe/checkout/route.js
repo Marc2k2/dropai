@@ -22,13 +22,14 @@ export async function POST(request) {
     .eq('id', user.id)
     .single();
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  // Derive base URL from request host so it works even if NEXT_PUBLIC_APP_URL isn't set
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? `https://${request.headers.get('host')}`;
 
   const sessionParams = {
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl}/pricing`,
+    success_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/pricing`,
     metadata: { user_id: user.id },
     subscription_data: { metadata: { user_id: user.id } },
   };

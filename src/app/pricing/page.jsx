@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Zap, Loader2 } from 'lucide-react';
+import { Check, Zap, Loader2, BadgeCheck } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 const plans = [
   {
@@ -67,12 +68,35 @@ export default function PricingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState('');
+  const [currentPlan, setCurrentPlan] = useState(null);
+
+  useEffect(() => {
+    try {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user) return;
+        supabase.from('profiles').select('plan').eq('id', user.id).single()
+          .then(({ data }) => { if (data?.plan) setCurrentPlan(data.plan); });
+      }).catch(() => {});
+    } catch {}
+  }, []);
 
   async function handleUpgrade(planId) {
+    if (currentPlan === planId) return;
+
     setLoading(planId);
     setError('');
 
     try {
+      // Paid users change plan via Customer Portal (avoids duplicate subscriptions)
+      if (currentPlan && currentPlan !== 'free') {
+        const res = await fetch('/api/stripe/portal', { method: 'POST' });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error);
+        window.location.href = json.url;
+        return;
+      }
+
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -111,50 +135,71 @@ export default function PricingPage() {
 
       {/* Plans */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {plans.map((plan) => (
-          <div
-            key={plan.id}
-            className={`relative bg-[#111118] border rounded-2xl p-6 flex flex-col transition-all ${plan.color}`}
-          >
-            {plan.highlight && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="px-3 py-1 rounded-full bg-violet-600 text-white text-[10px] font-semibold tracking-wide">
-                  MOST POPULAR
-                </span>
-              </div>
-            )}
+        {plans.map((plan) => {
+          const isCurrent = currentPlan === plan.id;
+          const isPaidChanging = currentPlan && currentPlan !== 'free' && !isCurrent;
 
-            <div className="mb-5">
-              <div className="text-sm font-medium text-slate-400 mb-1">{plan.name}</div>
-              <div className="flex items-end gap-1 mb-2">
-                <span className="text-3xl font-bold text-white">{plan.price}</span>
-                <span className="text-slate-500 text-sm mb-1">{plan.period}</span>
-              </div>
-              <p className="text-xs text-slate-500">{plan.description}</p>
-            </div>
-
-            <ul className="space-y-2.5 flex-1 mb-6">
-              {plan.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-sm text-slate-300">
-                  <Check size={13} className="text-violet-400 shrink-0" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => handleUpgrade(plan.id)}
-              disabled={!!loading}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-60 ${plan.btnColor}`}
+          return (
+            <div
+              key={plan.id}
+              className={`relative bg-[#111118] border rounded-2xl p-6 flex flex-col transition-all ${plan.color}`}
             >
-              {loading === plan.id ? (
-                <Loader2 size={15} className="animate-spin" />
-              ) : (
-                plan.cta
+              {plan.highlight && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="px-3 py-1 rounded-full bg-violet-600 text-white text-[10px] font-semibold tracking-wide">
+                    MOST POPULAR
+                  </span>
+                </div>
               )}
-            </button>
-          </div>
-        ))}
+
+              <div className="mb-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="text-sm font-medium text-slate-400">{plan.name}</div>
+                  {isCurrent && (
+                    <span className="flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                      <BadgeCheck size={10} />
+                      Current
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-end gap-1 mb-2">
+                  <span className="text-3xl font-bold text-white">{plan.price}</span>
+                  <span className="text-slate-500 text-sm mb-1">{plan.period}</span>
+                </div>
+                <p className="text-xs text-slate-500">{plan.description}</p>
+              </div>
+
+              <ul className="space-y-2.5 flex-1 mb-6">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm text-slate-300">
+                    <Check size={13} className="text-violet-400 shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handleUpgrade(plan.id)}
+                disabled={!!loading || isCurrent}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
+                  isCurrent
+                    ? 'bg-emerald-600/15 border border-emerald-500/20 text-emerald-400 cursor-default'
+                    : plan.btnColor
+                }`}
+              >
+                {loading === plan.id ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : isCurrent ? (
+                  'Current plan'
+                ) : isPaidChanging ? (
+                  'Change plan'
+                ) : (
+                  plan.cta
+                )}
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {/* FAQ note */}

@@ -53,6 +53,7 @@ export default function CompetitorAnalyzerPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'competitor-analyzer', ...form }),
       });
+      if (res.status === 401) { window.location.href = '/login'; return; }
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.error || 'Analysis failed');
       setResults(json.data);

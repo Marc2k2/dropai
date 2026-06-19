@@ -36,6 +36,7 @@ export default function CopyGeneratorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'copy', ...form }),
       });
+      if (res.status === 401) { window.location.href = '/login'; return; }
       const json = await res.json();
 
       if (!res.ok || !json.success) {

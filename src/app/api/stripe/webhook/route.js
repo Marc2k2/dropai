@@ -22,44 +22,57 @@ export async function POST(request) {
 
   const supabase = createAdminClient();
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object;
-      const userId = session.metadata?.user_id;
-      if (!userId) break;
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const userId = session.metadata?.user_id;
+        if (!userId) break;
 
-      const subscription = await stripe.subscriptions.retrieve(session.subscription);
-      const priceId = subscription.items.data[0]?.price?.id;
+        const subscription = await stripe.subscriptions.retrieve(session.subscription);
+        const priceId = subscription.items.data[0]?.price?.id;
 
-      await supabase
-        .from('profiles')
-        .update({
-          plan: planByPrice()[priceId] ?? 'free',
-          stripe_customer_id: session.customer,
-          stripe_subscription_id: session.subscription,
-        })
-        .eq('id', userId);
-      break;
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            plan: planByPrice()[priceId] ?? 'free',
+            stripe_customer_id: session.customer,
+            stripe_subscription_id: session.subscription,
+          })
+          .eq('id', userId);
+
+        if (error) throw error;
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const sub = event.data.object;
+        const priceId = sub.items.data[0]?.price?.id;
+
+        const { error } = await supabase
+          .from('profiles')
+          .update({ plan: planByPrice()[priceId] ?? 'free' })
+          .eq('stripe_customer_id', sub.customer);
+
+        if (error) throw error;
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object;
+
+        const { error } = await supabase
+          .from('profiles')
+          .update({ plan: 'free', stripe_subscription_id: null })
+          .eq('stripe_customer_id', sub.customer);
+
+        if (error) throw error;
+        break;
+      }
     }
-
-    case 'customer.subscription.updated': {
-      const sub = event.data.object;
-      const priceId = sub.items.data[0]?.price?.id;
-      await supabase
-        .from('profiles')
-        .update({ plan: planByPrice()[priceId] ?? 'free' })
-        .eq('stripe_customer_id', sub.customer);
-      break;
-    }
-
-    case 'customer.subscription.deleted': {
-      const sub = event.data.object;
-      await supabase
-        .from('profiles')
-        .update({ plan: 'free', stripe_subscription_id: null })
-        .eq('stripe_customer_id', sub.customer);
-      break;
-    }
+  } catch (err) {
+    console.error('Webhook DB error:', err);
+    return Response.json({ error: 'Internal error' }, { status: 500 });
   }
 
   return Response.json({ received: true });
