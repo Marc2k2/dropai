@@ -83,7 +83,7 @@ export default function LoginPage() {
           <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-violet-600">
             <Zap size={16} className="text-white fill-white" />
           </div>
-          <span className="text-xl font-semibold text-white tracking-tight">Huntly</span>
+          <span className="text-xl font-semibold text-white tracking-tight">Dropiq</span>
         </div>
 
         {/* Card */}
@@ -93,7 +93,7 @@ export default function LoginPage() {
           </h1>
           <p className="text-sm text-slate-500 mb-6">
             {mode === 'signin'
-              ? 'Sign in to your Huntly account'
+              ? 'Sign in to your Dropiq account'
               : mode === 'signup'
               ? 'Start generating copy and ad scripts in minutes'
               : 'Enter your email and we\'ll send a reset link'}
@@ -203,6 +203,11 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-slate-600 mt-5">
           Free during beta · No credit card required
+        </p>
+        <p className="text-center text-xs text-slate-700 mt-2">
+          <a href="/privacy" className="hover:text-slate-500 transition-colors">Privacy Policy</a>
+          {' · '}
+          <a href="/terms" className="hover:text-slate-500 transition-colors">Terms of Service</a>
         </p>
       </div>
     </div>
