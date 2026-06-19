@@ -7,12 +7,18 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState('signin'); // signin | signup
+  const [mode, setMode] = useState('signin'); // signin | signup | forgot
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  function switchMode(next) {
+    setMode(next);
+    setError('');
+    setSuccess('');
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -25,6 +31,19 @@ export default function LoginPage() {
       supabase = createClient();
     } catch (err) {
       setError(err.message);
+      setLoading(false);
+      return;
+    }
+
+    if (mode === 'forgot') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${location.origin}/auth/callback?next=/auth/reset-password`,
+      });
+      if (error) {
+        setError(error.message);
+      } else {
+        setSuccess('Check your email — we sent a password reset link.');
+      }
       setLoading(false);
       return;
     }
@@ -70,12 +89,14 @@ export default function LoginPage() {
         {/* Card */}
         <div className="bg-[#111118] border border-[#1e1e2e] rounded-2xl p-7">
           <h1 className="text-lg font-semibold text-white mb-1">
-            {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+            {mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create your account' : 'Reset your password'}
           </h1>
           <p className="text-sm text-slate-500 mb-6">
             {mode === 'signin'
               ? 'Sign in to your DropAI account'
-              : 'Start generating copy and ad scripts in minutes'}
+              : mode === 'signup'
+              ? 'Start generating copy and ad scripts in minutes'
+              : 'Enter your email and we\'ll send a reset link'}
           </p>
 
           {error && (
@@ -105,18 +126,31 @@ export default function LoginPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                placeholder="••••••••"
-                className="w-full bg-[#0d0d15] border border-[#1e1e2e] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-600/50 focus:ring-1 focus:ring-violet-600/30 transition-colors"
-              />
-            </div>
+            {mode !== 'forgot' && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-slate-400">Password</label>
+                  {mode === 'signin' && (
+                    <button
+                      type="button"
+                      onClick={() => switchMode('forgot')}
+                      className="text-xs text-slate-500 hover:text-violet-400 transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="••••••••"
+                  className="w-full bg-[#0d0d15] border border-[#1e1e2e] rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-600/50 focus:ring-1 focus:ring-violet-600/30 transition-colors"
+                />
+              </div>
+            )}
 
             <button
               type="submit"
@@ -125,18 +159,29 @@ export default function LoginPage() {
             >
               {loading ? (
                 <Loader2 size={16} className="animate-spin" />
+              ) : mode === 'signin' ? (
+                'Sign in'
+              ) : mode === 'signup' ? (
+                'Create account'
               ) : (
-                mode === 'signin' ? 'Sign in' : 'Create account'
+                'Send reset link'
               )}
             </button>
           </form>
 
           <div className="mt-5 text-center text-sm text-slate-500">
-            {mode === 'signin' ? (
+            {mode === 'forgot' ? (
+              <button
+                onClick={() => switchMode('signin')}
+                className="text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                Back to sign in
+              </button>
+            ) : mode === 'signin' ? (
               <>
                 Don&apos;t have an account?{' '}
                 <button
-                  onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
+                  onClick={() => switchMode('signup')}
                   className="text-violet-400 hover:text-violet-300 transition-colors"
                 >
                   Sign up free
@@ -146,7 +191,7 @@ export default function LoginPage() {
               <>
                 Already have an account?{' '}
                 <button
-                  onClick={() => { setMode('signin'); setError(''); setSuccess(''); }}
+                  onClick={() => switchMode('signin')}
                   className="text-violet-400 hover:text-violet-300 transition-colors"
                 >
                   Sign in

@@ -1,5 +1,5 @@
 import './globals.css';
-import Sidebar from '@/components/Sidebar';
+import AppShell from '@/components/AppShell';
 
 export const metadata = {
   title: 'DropAI — AI Toolkit for Dropshippers',
@@ -10,10 +10,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="bg-[#0a0a0f] text-slate-200 antialiased">
-        <Sidebar />
-        <main className="ml-56 min-h-screen">
-          {children}
-        </main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
