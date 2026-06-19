@@ -54,7 +54,7 @@ export default function ResetPasswordPage() {
           <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-violet-600">
             <Zap size={16} className="text-white fill-white" />
           </div>
-          <span className="text-xl font-semibold text-white tracking-tight">DropAI</span>
+          <span className="text-xl font-semibold text-white tracking-tight">Huntly</span>
         </div>
 
         <div className="bg-[#111118] border border-[#1e1e2e] rounded-2xl p-7">

@@ -60,7 +60,7 @@ export default function Sidebar() {
         <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-violet-600">
           <Zap size={14} className="text-white fill-white" />
         </div>
-        <span className="font-semibold text-white tracking-tight">DropAI</span>
+        <span className="font-semibold text-white tracking-tight">Huntly</span>
         <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-600/20 text-violet-400 border border-violet-600/30">
           BETA
         </span>

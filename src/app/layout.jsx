@@ -2,7 +2,7 @@ import './globals.css';
 import AppShell from '@/components/AppShell';
 
 export const metadata = {
-  title: 'DropAI — AI Toolkit for Dropshippers',
+  title: 'Huntly — AI Toolkit for Dropshippers',
   description: 'Product copy, ad scripts, and market analysis powered by Claude AI.',
 };
 
