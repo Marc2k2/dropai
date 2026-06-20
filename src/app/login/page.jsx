@@ -5,12 +5,24 @@ import { useRouter } from 'next/navigation';
 import { Zap, AlertCircle, Mail, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
+function GoogleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M15.68 8.18c0-.57-.05-1.11-.14-1.64H8v3.1h4.3a3.67 3.67 0 01-1.6 2.41v2h2.58c1.51-1.39 2.4-3.44 2.4-5.87z" fill="#4285F4"/>
+      <path d="M8 16c2.16 0 3.97-.71 5.3-1.94l-2.58-2a4.8 4.8 0 01-7.15-2.52H.96v2.07A8 8 0 008 16z" fill="#34A853"/>
+      <path d="M3.57 9.54A4.8 4.8 0 013.32 8c0-.53.09-1.05.25-1.54V4.39H.96A8 8 0 000 8c0 1.29.31 2.51.96 3.61l2.61-2.07z" fill="#FBBC05"/>
+      <path d="M8 3.2c1.22 0 2.31.42 3.17 1.24l2.37-2.37A8 8 0 00.96 4.39L3.57 6.46A4.8 4.8 0 018 3.2z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState('signin'); // signin | signup | forgot
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -18,6 +30,27 @@ export default function LoginPage() {
     setMode(next);
     setError('');
     setSuccess('');
+  }
+
+  async function handleGoogle() {
+    setGoogleLoading(true);
+    setError('');
+    let supabase;
+    try {
+      supabase = createClient();
+    } catch (err) {
+      setError(err.message);
+      setGoogleLoading(false);
+      return;
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${location.origin}/auth/callback` },
+    });
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -96,7 +129,7 @@ export default function LoginPage() {
               ? 'Sign in to your Dropiq account'
               : mode === 'signup'
               ? 'Start generating copy and ad scripts in minutes'
-              : 'Enter your email and we\'ll send a reset link'}
+              : "Enter your email and we'll send a reset link"}
           </p>
 
           {error && (
@@ -111,6 +144,26 @@ export default function LoginPage() {
               <Mail size={14} className="shrink-0" />
               {success}
             </div>
+          )}
+
+          {/* Google button — only on signin/signup */}
+          {mode !== 'forgot' && (
+            <>
+              <button
+                onClick={handleGoogle}
+                disabled={googleLoading || loading}
+                className="w-full flex items-center justify-center gap-2.5 py-2.5 bg-white hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed text-slate-800 rounded-lg text-sm font-medium transition-colors mb-4"
+              >
+                {googleLoading ? <Loader2 size={16} className="animate-spin text-slate-600" /> : <GoogleIcon />}
+                Continue with Google
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-[#1e1e2e]" />
+                <span className="text-xs text-slate-600">or</span>
+                <div className="flex-1 h-px bg-[#1e1e2e]" />
+              </div>
+            </>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -154,7 +207,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors mt-2"
             >
               {loading ? (
